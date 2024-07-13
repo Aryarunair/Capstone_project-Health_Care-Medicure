@@ -123,7 +123,7 @@ ingress {
 resource "aws_instance" "k8s_master" {
   ami           = "ami-0cca134ec43cf708f" 
   instance_type = "t2.micro"
-  key_name      = "healthcare"
+  key_name      = "healthcare.pem"
 
   subnet_id                   = aws_subnet.k8s_subnet.id
   vpc_security_group_ids      = [aws_security_group.k8s_master_sg.id]
@@ -138,7 +138,7 @@ resource "aws_instance" "k8s_master" {
 resource "aws_instance" "k8s_worker" {
   ami           = "ami-0cca134ec43cf708f"
   instance_type = "t2.micro" 
-  key_name      = "healthcare"
+  key_name      = "healthcare.pem"
 
   subnet_id                   = aws_subnet.k8s_subnet.id
   vpc_security_group_ids      = [aws_security_group.k8s_worker_sg.id]
