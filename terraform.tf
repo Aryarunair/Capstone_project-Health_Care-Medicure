@@ -142,7 +142,7 @@ ingress {
 
 # Create EC2 Instance for K8s Master
 resource "aws_instance" "k8s_master" {
-  ami           = "ami-0cca134ec43cf708f" 
+  ami           = "ami-0c2af51e265bd5e0e" 
   instance_type = "t2.micro"
   key_name      = "healthcare.pem"
 
@@ -157,7 +157,7 @@ resource "aws_instance" "k8s_master" {
 
 # Create EC2 Instance for K8s Worker  
 resource "aws_instance" "k8s_worker" {
-  ami           = "ami-0cca134ec43cf708f"
+  ami           = "ami-0c2af51e265bd5e0e"
   instance_type = "t2.micro" 
   key_name      = "healthcare.pem"
 
