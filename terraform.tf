@@ -49,27 +49,47 @@ resource "aws_subnet" "k8s_subnet" {
 resource "aws_security_group" "k8s_master_sg" {
   name   = "K8s Master Security Group"
   vpc_id = aws_vpc.k8s_vpc.id
-
-  ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    cidr_blocks     = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port       = 6443 
-    to_port         = 6443
-    protocol        = "tcp"
-    cidr_blocks     = ["0.0.0.0/0"]
+ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port       = 0
-    to_port         = 0 
-    protocol        = "-1"
-    cidr_blocks     = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
+ ingress {
+ description = "HTTPS traffic"
+ from_port = 443
+ to_port = 443
+ protocol = "tcp"
+ cidr_blocks = ["0.0.0.0/0"]
+ }
+ ingress {
+ description = "HTTP traffic"
+ from_port = 0
+ to_port = 65000
+ protocol = "tcp"
+ cidr_blocks = ["0.0.0.0/0"]
+ }
+ ingress {
+ description = "Allow port 80 inbound"
+ from_port   = 80
+ to_port     = 80
+ protocol    = "tcp"
+ cidr_blocks = ["0.0.0.0/0"]
+  }
+ egress {
+ from_port = 0
+ to_port = 0
+ protocol = "-1"
+ cidr_blocks = ["0.0.0.0/0"]
+ ipv6_cidr_blocks = ["::/0"]
+ }
 }
 
 # Create Security Group for K8s Worker
@@ -117,6 +137,7 @@ ingress {
  cidr_blocks = ["0.0.0.0/0"]
  ipv6_cidr_blocks = ["::/0"]
  }
+}
  
 
 # Create EC2 Instance for K8s Master
