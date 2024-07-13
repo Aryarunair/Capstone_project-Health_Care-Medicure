@@ -68,13 +68,13 @@ resource "null_resource" "retrieve_k3s_token" {
   provisioner "remote-exec" {
     inline = [
       "sleep 60", # Wait for the master node to initialize
-      "scp -o StrictHostKeyChecking=no -i /path/to/healthcare.pem ec2-user@${aws_instance.k8s_master.public_ip}:/var/lib/rancher/k3s/server/node-token ./node-token"
+      "scp -o StrictHostKeyChecking=no -i healthcare.pem ec2-user@${aws_instance.k8s_master.public_ip}:/var/lib/rancher/k3s/server/node-token ./node-token"
     ]
 
     connection {
       type        = "ssh"
       user        = "ec2-user"
-      private_key = file("/path/to/healthcare.pem")
+      private_key = file("healthcare.pem")
       host        = aws_instance.k8s_master.public_ip
     }
   }
