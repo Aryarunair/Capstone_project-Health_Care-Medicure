@@ -144,15 +144,7 @@ resource "aws_instance" "k8s_Master" {
  }
 }
 
-#Initialize Terraform
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.0"
-    }
-  }
-}
+
 
 # Configure the AWS provider
 provider "aws" {
