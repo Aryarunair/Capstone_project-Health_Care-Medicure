@@ -159,54 +159,54 @@ provider "aws" {
   region = "ap-south-1"
 }
 # Creating a VPC
-resource "aws_vpc" "proj-vpc" {
+resource "aws_vpc" "proj-vpc1" {
  cidr_block = "10.0.0.0/16"
 }
 
 # Create an Internet Gateway
-resource "aws_internet_gateway" "proj-ig" {
- vpc_id = aws_vpc.proj-vpc.id
+resource "aws_internet_gateway" "proj-ig1" {
+ vpc_id = aws_vpc.proj-vpc1.id
  tags = {
- Name = "gateway1"
+ Name = "gateway2"
  }
 }
 
 # Setting up the route table
-resource "aws_route_table" "proj-rt" {
- vpc_id = aws_vpc.proj-vpc.id
+resource "aws_route_table" "proj-rt1" {
+ vpc_id = aws_vpc.proj-vpc1.id
  route {
  # pointing to the internet
  cidr_block = "0.0.0.0/0"
- gateway_id = aws_internet_gateway.proj-ig.id
+ gateway_id = aws_internet_gateway.proj-ig1.id
  }
  route {
  ipv6_cidr_block = "::/0"
- gateway_id = aws_internet_gateway.proj-ig.id
+ gateway_id = aws_internet_gateway.proj-ig1.id
  }
  tags = {
- Name = "rt1"
+ Name = "rt2"
  }
 }
 
 # Setting up the subnet
-resource "aws_subnet" "proj-subnet" {
- vpc_id = aws_vpc.proj-vpc.id
+resource "aws_subnet" "proj-subnet1" {
+ vpc_id = aws_vpc.proj-vpc1.id
  cidr_block = "10.0.1.0/24"
  availability_zone = "ap-south-1b"
  tags = {
- Name = "subnet1"
+ Name = "subnet2"
  }
 }
 
 # Associating the subnet with the route table
-resource "aws_route_table_association" "proj-rt-sub-assoc" {
-subnet_id = aws_subnet.proj-subnet.id
-route_table_id = aws_route_table.proj-rt.id
+resource "aws_route_table_association" "proj-rt-sub-assoc1" {
+subnet_id = aws_subnet.proj-subnet1.id
+route_table_id = aws_route_table.proj-rt1.id
 }
 
 # Creating a Security Group
-resource "aws_security_group" "proj-sg" {
- name = "proj-sg"
+resource "aws_security_group" "proj-sg1" {
+ name = "proj-sg1"
  description = "Enable web traffic for the project"
  vpc_id = aws_vpc.proj-vpc.id
  ingress {
@@ -256,17 +256,17 @@ resource "aws_security_group" "proj-sg" {
 }
 
 # Creating a new network interface
-resource "aws_network_interface" "proj-ni" {
- subnet_id = aws_subnet.proj-subnet.id
+resource "aws_network_interface" "proj-ni1" {
+ subnet_id = aws_subnet.proj-subnet1.id
  private_ips = ["10.0.1.10"]
- security_groups = [aws_security_group.proj-sg.id]
+ security_groups = [aws_security_group.proj-sg1.id]
 }
 
 # Attaching an elastic IP to the network interface
-resource "aws_eip" "proj-eip" {
+resource "aws_eip" "proj-eip1" {
  vpc = true
- network_interface = aws_network_interface.proj-ni.id
- associate_with_private_ip = "10.0.1.10"
+ network_interface = aws_network_interface.proj-ni1.id
+ associate_with_private_ip = "10.0.1.102"
 }
 
 
@@ -278,7 +278,7 @@ resource "aws_instance" "k8s_worker" {
  key_name = "healthcare.pem"
  network_interface {
  device_index = 0
- network_interface_id = aws_network_interface.proj-ni.id
+ network_interface_id = aws_network_interface.proj-ni1.id
  }
  user_data  = <<-EOF
  #!/bin/bash
