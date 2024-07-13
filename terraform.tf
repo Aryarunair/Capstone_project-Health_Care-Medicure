@@ -1,55 +1,69 @@
+#Initialize Terraform
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.0"
+    }
+  }
+}
+
+# Configure the AWS provider
 provider "aws" {
   region = "ap-south-1"
 }
-
-# Create VPC
-resource "aws_vpc" "k8s_vpc" {
-  cidr_block = "10.0.0.0/16"
-
-  tags = {
-    Name = "K8s VPC"
-  }
+# Creating a VPC
+resource "aws_vpc" "proj-vpc" {
+ cidr_block = "10.0.0.0/16"
 }
 
-# Create Internet Gateway 
-resource "aws_internet_gateway" "k8s_gw" {
-  vpc_id = aws_vpc.k8s_vpc.id
-
-  tags = {
-    Name = "K8s Gateway"
-  }
+# Create an Internet Gateway
+resource "aws_internet_gateway" "proj-ig" {
+ vpc_id = aws_vpc.proj-vpc.id
+ tags = {
+ Name = "gateway1"
+ }
 }
 
-# Create Route Table
-resource "aws_route_table" "k8s_route_table" {
-  vpc_id = aws_vpc.k8s_vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.k8s_gw.id
-  }
-
-  tags = {
-    Name = "K8s Route Table"
-  }
+# Setting up the route table
+resource "aws_route_table" "proj-rt" {
+ vpc_id = aws_vpc.proj-vpc.id
+ route {
+ # pointing to the internet
+ cidr_block = "0.0.0.0/0"
+ gateway_id = aws_internet_gateway.proj-ig.id
+ }
+ route {
+ ipv6_cidr_block = "::/0"
+ gateway_id = aws_internet_gateway.proj-ig.id
+ }
+ tags = {
+ Name = "rt1"
+ }
 }
 
-# Create Subnet
-resource "aws_subnet" "k8s_subnet" {
-  vpc_id            = aws_vpc.k8s_vpc.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "ap-south-1a"
-
-  tags = {
-    Name = "K8s Subnet"
-  }
+# Setting up the subnet
+resource "aws_subnet" "proj-subnet" {
+ vpc_id = aws_vpc.proj-vpc.id
+ cidr_block = "10.0.1.0/24"
+ availability_zone = "ap-south-1b"
+ tags = {
+ Name = "subnet1"
+ }
 }
 
-# Create Security Group for K8s Master
-resource "aws_security_group" "k8s_master_sg" {
-  name   = "K8s Master Security Group"
-  vpc_id = aws_vpc.k8s_vpc.id
-ingress {
+# Associating the subnet with the route table
+resource "aws_route_table_association" "proj-rt-sub-assoc" {
+subnet_id = aws_subnet.proj-subnet.id
+route_table_id = aws_route_table.proj-rt.id
+}
+
+# Creating a Security Group
+resource "aws_security_group" "proj-sg" {
+ name = "proj-sg"
+ description = "Enable web traffic for the project"
+ vpc_id = aws_vpc.proj-vpc.id
+ ingress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -90,13 +104,112 @@ ingress {
  cidr_blocks = ["0.0.0.0/0"]
  ipv6_cidr_blocks = ["::/0"]
  }
+ tags = {
+ Name = "proj-sg1"
+ }
 }
 
-# Create Security Group for K8s Worker
-resource "aws_security_group" "k8s_worker_sg" {
-  name   = "K8s Worker Security Group" 
-  vpc_id = aws_vpc.k8s_vpc.id
-ingress {
+# Creating a new network interface
+resource "aws_network_interface" "proj-ni" {
+ subnet_id = aws_subnet.proj-subnet.id
+ private_ips = ["10.0.1.10"]
+ security_groups = [aws_security_group.proj-sg.id]
+}
+
+# Attaching an elastic IP to the network interface
+resource "aws_eip" "proj-eip" {
+ vpc = true
+ network_interface = aws_network_interface.proj-ni.id
+ associate_with_private_ip = "10.0.1.10"
+}
+
+
+# Creating an ubuntu EC2 instance
+resource "aws_instance" "k8s_Master" {
+ ami = "ami-0c2af51e265bd5e0e"
+ instance_type = "t2.micro"
+ availability_zone = "ap-south-1b"
+ key_name = "healthcare.pem"
+ network_interface {
+ device_index = 0
+ network_interface_id = aws_network_interface.proj-ni.id
+ }
+ user_data  = <<-EOF
+ #!/bin/bash
+     sudo apt-get update -y
+    
+ EOF
+ tags = {
+ Name = "k8s_Master"
+ }
+}
+
+#Initialize Terraform
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.0"
+    }
+  }
+}
+
+# Configure the AWS provider
+provider "aws" {
+  region = "ap-south-1"
+}
+# Creating a VPC
+resource "aws_vpc" "proj-vpc" {
+ cidr_block = "10.0.0.0/16"
+}
+
+# Create an Internet Gateway
+resource "aws_internet_gateway" "proj-ig" {
+ vpc_id = aws_vpc.proj-vpc.id
+ tags = {
+ Name = "gateway1"
+ }
+}
+
+# Setting up the route table
+resource "aws_route_table" "proj-rt" {
+ vpc_id = aws_vpc.proj-vpc.id
+ route {
+ # pointing to the internet
+ cidr_block = "0.0.0.0/0"
+ gateway_id = aws_internet_gateway.proj-ig.id
+ }
+ route {
+ ipv6_cidr_block = "::/0"
+ gateway_id = aws_internet_gateway.proj-ig.id
+ }
+ tags = {
+ Name = "rt1"
+ }
+}
+
+# Setting up the subnet
+resource "aws_subnet" "proj-subnet" {
+ vpc_id = aws_vpc.proj-vpc.id
+ cidr_block = "10.0.1.0/24"
+ availability_zone = "ap-south-1b"
+ tags = {
+ Name = "subnet1"
+ }
+}
+
+# Associating the subnet with the route table
+resource "aws_route_table_association" "proj-rt-sub-assoc" {
+subnet_id = aws_subnet.proj-subnet.id
+route_table_id = aws_route_table.proj-rt.id
+}
+
+# Creating a Security Group
+resource "aws_security_group" "proj-sg" {
+ name = "proj-sg"
+ description = "Enable web traffic for the project"
+ vpc_id = aws_vpc.proj-vpc.id
+ ingress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -137,35 +250,42 @@ ingress {
  cidr_blocks = ["0.0.0.0/0"]
  ipv6_cidr_blocks = ["::/0"]
  }
-}
- 
-
-# Create EC2 Instance for K8s Master
-resource "aws_instance" "k8s_master" {
-  ami           = "ami-0c2af51e265bd5e0e" 
-  instance_type = "t2.micro"
-  key_name      = "healthcare.pem"
-
-  subnet_id                   = aws_subnet.k8s_subnet.id
-  vpc_security_group_ids      = [aws_security_group.k8s_master_sg.id]
-  associate_public_ip_address = true
-
-  tags = {
-    Name = "K8s Master"
-  }
+ tags = {
+ Name = "proj-sg1"
+ }
 }
 
-# Create EC2 Instance for K8s Worker  
+# Creating a new network interface
+resource "aws_network_interface" "proj-ni" {
+ subnet_id = aws_subnet.proj-subnet.id
+ private_ips = ["10.0.1.10"]
+ security_groups = [aws_security_group.proj-sg.id]
+}
+
+# Attaching an elastic IP to the network interface
+resource "aws_eip" "proj-eip" {
+ vpc = true
+ network_interface = aws_network_interface.proj-ni.id
+ associate_with_private_ip = "10.0.1.10"
+}
+
+
+# Creating an ubuntu EC2 instance
 resource "aws_instance" "k8s_worker" {
-  ami           = "ami-0c2af51e265bd5e0e"
-  instance_type = "t2.micro" 
-  key_name      = "healthcare.pem"
-
-  subnet_id                   = aws_subnet.k8s_subnet.id
-  vpc_security_group_ids      = [aws_security_group.k8s_worker_sg.id]
-  associate_public_ip_address = true
-
-  tags = {
-    Name = "K8s Worker"
-  }
+ ami = "ami-0c2af51e265bd5e0e"
+ instance_type = "t2.micro"
+ availability_zone = "ap-south-1b"
+ key_name = "healthcare.pem"
+ network_interface {
+ device_index = 0
+ network_interface_id = aws_network_interface.proj-ni.id
+ }
+ user_data  = <<-EOF
+ #!/bin/bash
+     sudo apt-get update -y
+   
+ EOF
+ tags = {
+ Name = "k8s_worker"
+ }
 }
