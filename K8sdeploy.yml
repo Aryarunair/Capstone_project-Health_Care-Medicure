@@ -16,7 +16,7 @@ spec:
     spec: 
       containers:
         - name: c001
-          image: arya1695/healthcare-medicure
+          image: arya1695/healthcare
           ports:
             - containerPort: 8082
 
